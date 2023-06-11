@@ -1,4 +1,4 @@
-# Arie Rozental 209400753, Amit David 206931594
+# Created by Arie Rozental
 from sklearn.datasets import fetch_openml
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -15,12 +15,13 @@ def Y (w, X):
     return numerator/denominator
 
 
-def W (w, y, t_one_hot, X, etta):
+def W (w, y, t_one_hot, X):
+    etta = 0.00008
     return w - etta * Grad_e(y, t_one_hot, X)
 
 
 def Grad_e (y, t_one_hot, X):
-    grad = np.dot((y - t_one_hot.T), X.T)
+    grad=np.dot((y - t_one_hot.T), X.T)
     return grad
 
 
@@ -36,38 +37,35 @@ def Accuracy (y, t):
     return (accuret_predictions / t.shape[0])*100
 
 
-def Update_func (y, w, x, t, set):
-    accuracy_list = []  # Initialize an empty list to store accuracy values
-    loss_list = []  # Initialize an empty list to store loss values
+def Update_func(w, x, t, set):
+    accuracy_list = []
+    loss_list = []
     for i in range(100):
         y = Y(w, x)
-        w = W(w, y, t, X, etta)
+        w = W(w, y, t, x)
         loss = Loss(t, y)
-        loss_list.append(loss)  # Append loss to the list
+        loss_list.append(loss)
         accuracy = Accuracy(y, t)
-        accuracy_list.append(accuracy)  # Append accuracy to the list
-        print("iteration: " + str(i))
-        print("loss is: " + str(loss))
+        accuracy_list.append(accuracy)
         i += 1
-    plot_loss(loss_list, type, set)
+    plot_loss(loss_list, set)
     plot_accuracy(accuracy_list, set)
 
 
-def plot_loss(loss_list,type, set):
-    plt.plot(range(0, 100), loss_list, label=type)
+def plot_loss(loss_list,batch):
+    plt.plot(range(0, 100), loss_list)
     plt.xlabel('Iteration')
     plt.ylabel('Loss')
-    plt.title("Loss(Iteration) on the " + str(set) + " set")
-    plt.legend()
+    plt.title('Loss(Iteration) on '+str(batch))
     plt.show()
+    plt.figure()
 
 
-def plot_accuracy(accuracy_list, type, set):
-    plt.plot(range(0, 100), accuracy_list, label=type)
+def plot_accuracy(accuracy_list,batch):
+    plt.plot(range(0, 100), accuracy_list)
     plt.xlabel('Iteration')
     plt.ylabel('Accuracy %')
-    plt.title("Accuracy(Iteration) on the " + str(set) + " set")
-    plt.legend()
+    plt.title(str(batch) + ' Accuracy vs. Iteration')
     plt.show()
 
 
@@ -78,28 +76,25 @@ random_state = check_random_state(1)
 permutation = random_state.permutation(X.shape[0])
 X = X[permutation]
 t = t[permutation]
-X = X.reshape((X.shape[0], -1))  # This line flattens the image into a vectors of size 784
+X = X.reshape((X.shape[0], -1))  # flattens the image into a vectors of size 784
 K = 10
-scaler = StandardScaler()
-ones = np.ones((X.shape[0], 1))  # 2 vector of ones the size 70000
+ones = np.ones((X.shape[0], 1))  # vector of ones of size 70000
 X = np.hstack((X, ones))  # appending the ones vector to the end of the X 2d array
 t = t.reshape(-1, 1)  # also adding ones to end of t
 X = X.T
 X_train, X_test, t_train, t_test = train_test_split(X.T, t, train_size=0.6)  # 4 train set = 60%, validation set = 20%, test_set = 20%
 X_test, X_valid, t_test, t_valid = train_test_split(X_test, t_test, test_size=0.5)  # broken into 2 parts
+shape = (10, 784)
+scaler = StandardScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
 X_valid = scaler.transform(X_valid)
-shape = (10, 784)
-w = np.random.normal(loc=0, scale=1, size=shape)  # 5 Create a 10x784 array of random integers between -0.5 and 0.5
+w = np.random.normal(loc=0, scale=1, size=shape)  # Create a 10x784 array of random integers between -0.5 and 0.5
 zeros_column = np.zeros((K, 1))  # creating a column of zeros to add to the end of the W array
 w = np.append(w, zeros_column, axis=1)  # appending the ones vector to the end of the X 2d array
 lb = LabelBinarizer()  # encode func
-# 6 - the creation of the cross entropy loss matrix
-# train is for the learning, on the validation check the best accuracy, in the end compare it to the test.
-# 7
-etta = 0.01
-Update_func(Y(w, X), w, X_train.T, lb.fit_transform(t_train), 'train')
-Update_func(Y(w, X), w, X_valid.T, lb.fit_transform(t_valid), 'validation')
-Update_func(Y(w, X), w, X_test.T, lb.fit_transform(t_test), 'test')
+t_one_hot = lb.fit_transform(t_train)
 
+Update_func(w, X_train.T, lb.fit_transform(t_train), 'train') # the creation of the cross entropy loss matrix
+Update_func(w, X_valid.T, lb.fit_transform(t_valid), 'validation')
+Update_func(w, X_test.T, lb.fit_transform(t_test), 'test')
